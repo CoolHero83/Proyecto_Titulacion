@@ -1,0 +1,6 @@
+# Ignorar carpeta de documentación
+docs/
+
+# Ignorar documentos de Word
+*.doc
+*.docx
