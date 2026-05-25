@@ -301,11 +301,18 @@ def save_csv(records: List[Dict[str, Any]], path: str) -> None:
 
 
 def save_keyword_report(matches: List[Dict[str, str]], path: str) -> None:
-    """Guarda coincidencias keyword|url en un archivo de reporte."""
+    """Guarda coincidencias keyword|url en un archivo de reporte (modo append)."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "a", encoding="utf-8") as f:
         for m in matches:
             f.write(f"{m['keyword']} | {m['url']}\n")
+
+def save_incremental_keyword_report(keyword_counts: Dict[str, int], path: str, current_url: str) -> None:
+    """Guarda report incremental con formato keyword | count | url."""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        for keyword, count in keyword_counts.items():
+            f.write(f"{keyword} | {count} | {current_url}\n")
 
 
 def save_checkpoint(path: str, pending: List[Tuple[str, int]], visited: Set[str]) -> None:
@@ -521,9 +528,13 @@ def main() -> None:
         visited.add(current_url)
         html = response.text
 
+        # Contador de coincidencias por keyword para esta página
+        page_keyword_counts = {}
+
         for kw in keywords:
             if kw.lower() in html.lower():
                 keyword_matches.append({"keyword": kw, "url": current_url})
+                page_keyword_counts[kw] = page_keyword_counts.get(kw, 0) + 1
 
         page_records = extract_posts_from_html(current_url, html)
         if anonymizer:
@@ -551,6 +562,12 @@ def main() -> None:
             save_jsonl(unique_page_records, args.jsonl_out)
             save_csv(unique_page_records, args.csv_out)
             logger.info("Guardado incremental: %s registros únicos de %s", len(unique_page_records), current_url)
+
+        # Guardado incremental del report de keywords con conteo
+        if page_keyword_counts:
+            save_incremental_keyword_report(page_keyword_counts, args.report_out, current_url)
+            logger.info("Guardado incremental de report: %s coincidencias de %s keywords",
+                       sum(page_keyword_counts.values()), len(page_keyword_counts))
 
         # Descubrir nuevos enlaces onion para seguir recorriendo.
         for link in extract_onion_links(html):
