@@ -1,6 +1,9 @@
 # Ignorar carpeta de documentación
 docs/
 Kali/
+Bibliografia/
+Capturas/
+Imágnes/
 
 # Ignorar documentos de Word
 *.doc
