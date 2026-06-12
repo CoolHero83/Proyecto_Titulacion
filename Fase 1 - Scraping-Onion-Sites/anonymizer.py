@@ -49,7 +49,7 @@ class PIIAnonymizer:
         # if "username" in out:
         #     out["username"] = self.anonymize_username(out.get("username"))
 
-        for field in ("title", "body", "quoted_text"):
+        for field in ("titulo", "cuerpo", "texto_citado"):
             if field in out:
                 out[field] = self.anonymize_text(out.get(field))
 

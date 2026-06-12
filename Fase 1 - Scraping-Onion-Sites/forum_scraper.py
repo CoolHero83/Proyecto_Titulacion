@@ -504,14 +504,14 @@ def main() -> None:
         # Filtro por fecha si days_back > 0
         if args.days_back > 0:
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=args.days_back)
-            page_records = [r for r in page_records if datetime.fromisoformat(r["timestamp"]) >= cutoff_date]
+            page_records = [r for r in page_records if datetime.fromisoformat(r["fecha_hora"]) >= cutoff_date]
             logger.info("Filtrados por fecha reciente: %s registros", len(page_records))
 
         # Deduplicación incremental por página antes de guardar
         content_fingerprints = set()
         unique_page_records = []
         for record in page_records:
-            fingerprint = record["content_fingerprint"]
+            fingerprint = record["huella_contenido"]
             if fingerprint not in content_fingerprints:
                 content_fingerprints.add(fingerprint)
                 unique_page_records.append(record)
@@ -546,7 +546,7 @@ def main() -> None:
     unique_records = []
 
     for record in records:
-        fingerprint = record["content_fingerprint"]
+        fingerprint = record["huella_contenido"]
         if fingerprint not in content_fingerprints:
             content_fingerprints.add(fingerprint)
             unique_records.append(record)
