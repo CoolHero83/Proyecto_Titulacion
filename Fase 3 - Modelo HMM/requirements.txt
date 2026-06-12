@@ -1,0 +1,16 @@
+# Dependencias Fase 3 - Modelo HMM
+# Instalar con: pip install -r requirements.txt
+
+# Modelos ocultos de Markov
+hmmlearn>=0.3.0
+
+# Manipulación de datos
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualización
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Progreso y logging
+tqdm>=4.66.0

@@ -123,11 +123,11 @@ def generar_secuencias_hmm(ruta_csv_entrada: str,
         for nombre_usuario, secuencia in secuencias_filtradas.items():
             datos_hmm["sequences"][nombre_usuario] = [
                 {
-                    "message_id": post.get("message_id"),
-                    "timestamp": post.get("timestamp"),
-                    "threat_score": post.get("threat_score"),
-                    "entities": json.loads(post["entities"]) if isinstance(post.get("entities"), str) else post.get("entities"),
-                    "mitre_techniques": json.loads(post["mitre_techniques"]) if isinstance(post.get("mitre_techniques"), str) else post.get("mitre_techniques")
+                    "id_mensaje": post.get("id_mensaje"),
+                    "fecha_hora": post.get("fecha_hora"),
+                    "puntuacion_amenaza": post.get("puntuacion_amenaza"),
+                    "entidades": json.loads(post["entidades"]) if isinstance(post.get("entidades"), str) else post.get("entidades"),
+                    "tecnicas_mitre": json.loads(post["tecnicas_mitre"]) if isinstance(post.get("tecnicas_mitre"), str) else post.get("tecnicas_mitre")
                 }
                 for post in secuencia
             ]

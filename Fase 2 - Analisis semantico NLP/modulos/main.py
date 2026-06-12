@@ -14,7 +14,7 @@ Uso desde línea de comandos:
     python main.py --input <csv_entrada> --output-csv <csv_salida> --output-hmm <json_salida>
 
 Ejemplo:
-    python main.py --input ../datos_limpios.csv --output-csv enriquecido.csv --output-hmm secuencias.json
+    python main.py --input ../Datos/forum_records_clean.csv --output-csv ../Datos/datos_enriquecidos.csv --output-hmm ../Datos/secuencias_autores.json
 """
 
 import argparse
@@ -96,21 +96,21 @@ class ProcesadorSecureBERT:
         ----------
         post : dict
             Diccionario con los datos del post. Debe contener al menos
-            'body_limpio' o 'body' con el texto a analizar.
+            'cuerpo_limpio' con el texto a analizar.
 
         Retorna
         -------
         dict
             Post enriquecido con los campos adicionales:
-            - entities: JSON con entidades detectadas
-            - mitre_techniques: JSON con técnicas MITRE
-            - threat_score: puntuación de amenaza (0-1)
-            - entity_count: cantidad de entidades
-            - mitre_count: cantidad de técnicas
+            - entidades: JSON con entidades detectadas
+            - tecnicas_mitre: JSON con técnicas MITRE
+            - puntuacion_amenaza: puntuación de amenaza (0-1)
+            - cantidad_entidades: cantidad de entidades
+            - cantidad_tecnicas: cantidad de técnicas
         """
         try:
             # Extraer contenido limpio del post
-            contenido_limpio = post.get('body_limpio', '') or post.get('body', '') or ''
+            contenido_limpio = post.get('cuerpo_limpio', '') or post.get('cuerpo', '') or ''
 
             # Procesar NER con SecureBERT
             entidades = procesar_ner.procesar_ner(contenido_limpio, self.pipeline_ner)
@@ -124,28 +124,28 @@ class ProcesadorSecureBERT:
             # Construir post enriquecido
             post_enriquecido = {
                 **post,
-                "entities": json.dumps([{
+                "entidades": json.dumps([{
                     "type": e["type"],
                     "text": e["text"],
                     "confidence": e["confidence"]
                 } for e in entidades], ensure_ascii=False),
-                "mitre_techniques": json.dumps(tecnicas_mitre, ensure_ascii=False),
-                "threat_score": puntuacion_amenaza,
-                "entity_count": len(entidades),
-                "mitre_count": len(tecnicas_mitre)
+                "tecnicas_mitre": json.dumps(tecnicas_mitre, ensure_ascii=False),
+                "puntuacion_amenaza": puntuacion_amenaza,
+                "cantidad_entidades": len(entidades),
+                "cantidad_tecnicas": len(tecnicas_mitre)
             }
 
             return post_enriquecido
 
         except Exception as e:
-            logger.error(f"Error procesando post {post.get('message_id', 'desconocido')}: {e}")
+            logger.error(f"Error procesando post {post.get('id_mensaje', 'desconocido')}: {e}")
             return {
                 **post,
-                "entities": "[]",
-                "mitre_techniques": "[]",
-                "threat_score": 0.0,
-                "entity_count": 0,
-                "mitre_count": 0
+                "entidades": "[]",
+                "tecnicas_mitre": "[]",
+                "puntuacion_amenaza": 0.0,
+                "cantidad_entidades": 0,
+                "cantidad_tecnicas": 0
             }
 
 
@@ -165,18 +165,18 @@ def main():
 
     parser.add_argument(
         "--input", "-i",
-        default="test_input.csv",
-        help="Ruta al CSV de entrada con posts limpios (default: test_input.csv)"
+        default="../Datos/forum_records_clean.csv",
+        help="Ruta al CSV de entrada con posts limpios (default: ../Datos/forum_records_clean.csv)"
     )
     parser.add_argument(
         "--output-csv", "-o",
-        default="enriched_forum_data.csv",
-        help="Ruta al CSV de salida con datos enriquecidos (default: enriched_forum_data.csv)"
+        default="../Datos/datos_enriquecidos.csv",
+        help="Ruta al CSV de salida con datos enriquecidos (default: ../Datos/datos_enriquecidos.csv)"
     )
     parser.add_argument(
         "--output-hmm", "-m",
-        default="author_sequences.json",
-        help="Ruta al JSON de salida con secuencias para HMM (default: author_sequences.json)"
+        default="../Datos/secuencias_autores.json",
+        help="Ruta al JSON de salida con secuencias para HMM (default: ../Datos/secuencias_autores.json)"
     )
     parser.add_argument(
         "--mitre-mapping", "-d",

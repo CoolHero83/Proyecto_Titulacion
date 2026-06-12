@@ -29,8 +29,8 @@ def agrupar_por_autor(posts: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, A
     posts : list[dict]
         Lista de diccionarios, cada uno representando un post enriquecido.
         Cada post debe tener al menos:
-        - 'username': nombre del autor
-        - 'timestamp': marca de tiempo del post
+        - 'usuario': nombre del autor
+        - 'fecha_hora': marca de tiempo del post
 
     Retorna
     -------
@@ -42,18 +42,18 @@ def agrupar_por_autor(posts: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, A
     secuencias = {}
 
     for post in posts:
-        nombre_usuario = post.get('username', 'usuario_desconocido')
-        timestamp = post.get('timestamp')
+        nombre_usuario = post.get('usuario', 'usuario_desconocido')
+        fecha_hora_raw = post.get('fecha_hora')
 
-        if not timestamp:
+        if not fecha_hora_raw:
             continue
 
         try:
-            # Convertir timestamp a datetime para ordenamiento cronológico
-            if isinstance(timestamp, str):
-                fecha_hora = pd.to_datetime(timestamp)
+            # Convertir fecha_hora a datetime para ordenamiento cronológico
+            if isinstance(fecha_hora_raw, str):
+                fecha_hora = pd.to_datetime(fecha_hora_raw)
             else:
-                fecha_hora = timestamp
+                fecha_hora = fecha_hora_raw
 
             if nombre_usuario not in secuencias:
                 secuencias[nombre_usuario] = []
@@ -66,8 +66,8 @@ def agrupar_por_autor(posts: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, A
 
         except Exception as e:
             logger.warning(
-                f"Error procesando timestamp para post "
-                f"{post.get('message_id', 'desconocido')}: {e}"
+                f"Error procesando fecha_hora para post "
+                f"{post.get('id_mensaje', 'desconocido')}: {e}"
             )
             continue
 

@@ -1,9 +1,33 @@
-transformers==4.41.2
-torch==2.2.2
-pandas==2.2.2
-numpy==1.26.4
-scikit-learn==1.5.0
-tqdm==4.66.4
-python-dateutil==2.9.0
-requests==2.32.3
-jsonlines==4.0.0
+# Dependencias para Fase 2 - Analisis semantico NLP
+# ---------------------------------------------------------------
+# Instalación RÁPIDA (recomendado para Kali con poco espacio):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install transformers pandas numpy scikit-learn tqdm requests jsonlines python-dateutil
+#
+# O usa el script automático:
+#   chmod +x install_linux.sh && ./install_linux.sh
+# ---------------------------------------------------------------
+
+transformers
+torch
+pandas
+numpy
+scikit-learn
+tqdm
+python-dateutil
+requests
+jsonlines
+
+
+# INstalacion manual (si no quieres usar el script):
+# 1. Liberar espacio
+#pip cache purge
+
+# 2. Instalar PyTorch CPU (~200MB)
+#pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# 3. Instalar resto
+#pip install transformers pandas numpy scikit-learn tqdm requests jsonlines
+
+# 4. Verificar
+#python3 -c "import transformers; print(f'✅ transformers {transformers.__version__}')"

@@ -40,38 +40,10 @@ def cargar_datos(ruta: str) -> pd.DataFrame:
     if 'fecha' in df.columns:
         df['fecha'] = pd.to_datetime(df['fecha'], errors='coerce')
 
-    if 'timestamp' in df.columns:
-        df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+    if 'fecha_hora' in df.columns:
+        df['fecha_hora'] = pd.to_datetime(df['fecha_hora'], errors='coerce')
 
     return df
-
-
-def procesar_entidades(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Procesa el campo 'entidades' (JSON string) y extrae los tipos
-    de entidades más comunes.
-    """
-    tipos_entidades = []
-
-    for _, fila in df.iterrows():
-        entidades_str = fila.get('entidades', '{}')
-        if pd.isna(entidades_str) or entidades_str == '{}':
-            continue
-
-        try:
-            entidades = json.loads(entidades_str) if isinstance(entidades_str, str) else entidades_str
-            if isinstance(entidades, dict):
-                for categoria, lista in entidades.items():
-                    if isinstance(lista, list):
-                        for item in lista:
-                            if isinstance(item, str):
-                                tipos_entidades.append((categoria, item))
-                            elif isinstance(item, dict):
-                                tipos_entidades.append((categoria, item.get('text', str(item))))
-        except (json.JSONDecodeError, TypeError):
-            continue
-
-    return pd.DataFrame(tipos_entidades, columns=['categoria', 'valor'])
 
 
 # ---------------------------------------------------------------------------
@@ -82,8 +54,8 @@ st.sidebar.title("🌐 Dashboard .onion")
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📁 Carga de datos")
 
-# Selector de archivo (por defecto busca el archivo preprocesado)
-RUTA_DEFAULT = "output/forum_records_clean.csv"
+# Selector de archivo (por defecto busca el archivo preprocesado en Datos/)
+RUTA_DEFAULT = "../Datos/forum_records_clean.csv"
 ruta_archivo = st.sidebar.text_input(
     "Ruta del CSV preprocesado:",
     value=RUTA_DEFAULT
@@ -118,7 +90,7 @@ if not datos_cargados:
         1. **Ejecutar el scraper** para obtener datos crudos
         2. **Ejecutar el Preprocesador** para limpiar los datos:
            ```bash
-           python Preprocesador.py --input forum_records.csv --output output/forum_records_clean.csv
+           python Preprocesador.py --input ../Datos/forum_records.csv --output ../Datos/forum_records_clean.csv
            ```
         3. **Cargar el archivo** en el sidebar de este dashboard
         """)
@@ -128,14 +100,6 @@ if not datos_cargados:
 # ---------------------------------------------------------------------------
 # Filtros
 # ---------------------------------------------------------------------------
-
-# Filtro por foro
-if 'forum_name' in df.columns:
-    foros_disponibles = ['Todos'] + sorted(df['forum_name'].dropna().unique().tolist())
-    foro_seleccionado = st.sidebar.selectbox("Foro:", foros_disponibles)
-
-    if foro_seleccionado != 'Todos':
-        df = df[df['forum_name'] == foro_seleccionado]
 
 # Filtro por rango de fechas
 if 'fecha' in df.columns and not df['fecha'].isna().all():
@@ -155,18 +119,18 @@ if 'fecha' in df.columns and not df['fecha'].isna().all():
             df = df[(df['fecha'].dt.date >= fecha_inicio) &
                     (df['fecha'].dt.date <= fecha_fin)]
 
-# Filtro por longitud mínima de body
-if 'longitud_body' in df.columns:
-    min_long = int(df['longitud_body'].min())
-    max_long = int(df['longitud_body'].max())
+# Filtro por longitud mínima del cuerpo
+if 'longitud_cuerpo' in df.columns:
+    min_long = int(df['longitud_cuerpo'].min())
+    max_long = int(df['longitud_cuerpo'].max())
     rango_longitud = st.sidebar.slider(
-        "Longitud mínima del body:",
+        "Longitud mínima del cuerpo:",
         min_value=min_long,
         max_value=max_long,
         value=(min_long, min(max_long, 500))
     )
-    df = df[(df['longitud_body'] >= rango_longitud[0]) &
-            (df['longitud_body'] <= rango_longitud[1])]
+    df = df[(df['longitud_cuerpo'] >= rango_longitud[0]) &
+            (df['longitud_cuerpo'] <= rango_longitud[1])]
 
 # ---------------------------------------------------------------------------
 # Cabecera
@@ -189,35 +153,35 @@ with col1:
     )
 
 with col2:
-    if 'username' in df.columns:
-        usuarios_unicos = df['username'].nunique()
+    if 'usuario' in df.columns:
+        usuarios_unicos = df['usuario'].nunique()
         st.metric(
             label="👤 Usuarios Únicos",
             value=f"{usuarios_unicos:,}"
         )
 
 with col3:
-    if 'forum_name' in df.columns:
-        foros_unicos = df['forum_name'].nunique()
-        st.metric(
-            label="🏛️ Foros",
-            value=f"{foros_unicos}"
-        )
-
-with col4:
-    if 'longitud_body' in df.columns:
-        long_promedio = int(df['longitud_body'].mean())
+    if 'longitud_cuerpo' in df.columns:
+        long_promedio = int(df['longitud_cuerpo'].mean())
         st.metric(
             label="📏 Longitud Promedio",
             value=f"{long_promedio:,} chars"
         )
 
-with col5:
+with col4:
     if 'fecha' in df.columns and not df['fecha'].isna().all():
         dias_activos = df['fecha'].dt.date.nunique()
         st.metric(
             label="📅 Días Activos",
             value=f"{dias_activos:,}"
+        )
+
+with col5:
+    if 'id_hilo' in df.columns:
+        hilos_unicos = df['id_hilo'].nunique()
+        st.metric(
+            label="🧵 Hilos Únicos",
+            value=f"{hilos_unicos:,}"
         )
 
 st.markdown("---")
@@ -226,11 +190,10 @@ st.markdown("---")
 # Layout en pestañas
 # ---------------------------------------------------------------------------
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "📊 Resumen General",
     "👥 Actividad por Autor",
     "📅 Tendencia Temporal",
-    "🏷️ Foros y Categorías",
     "📋 Datos Crudos"
 ])
 
@@ -248,14 +211,14 @@ with tab1:
 
         stats_data = []
 
-        if 'longitud_body' in df.columns:
+        if 'longitud_cuerpo' in df.columns:
             stats_data.append({
-                "Métrica": "Longitud Body",
-                "Media": f"{df['longitud_body'].mean():.0f}",
-                "Mediana": f"{df['longitud_body'].median():.0f}",
-                "Mínimo": f"{df['longitud_body'].min():.0f}",
-                "Máximo": f"{df['longitud_body'].max():.0f}",
-                "Desv. Est.": f"{df['longitud_body'].std():.0f}"
+                "Métrica": "Longitud Cuerpo",
+                "Media": f"{df['longitud_cuerpo'].mean():.0f}",
+                "Mediana": f"{df['longitud_cuerpo'].median():.0f}",
+                "Mínimo": f"{df['longitud_cuerpo'].min():.0f}",
+                "Máximo": f"{df['longitud_cuerpo'].max():.0f}",
+                "Desv. Est.": f"{df['longitud_cuerpo'].std():.0f}"
             })
 
         if 'longitud_titulo' in df.columns:
@@ -275,15 +238,15 @@ with tab1:
             )
 
     with col_right:
-        st.markdown("### 📊 Distribución de Longitud de Body")
+        st.markdown("### 📊 Distribución de Longitud del Cuerpo")
 
-        if 'longitud_body' in df.columns:
+        if 'longitud_cuerpo' in df.columns:
             fig = px.histogram(
                 df,
-                x='longitud_body',
+                x='longitud_cuerpo',
                 nbins=30,
                 title="Distribución de Longitud de Posts",
-                labels={'longitud_body': 'Longitud (caracteres)'},
+                labels={'longitud_cuerpo': 'Longitud (caracteres)'},
                 color_discrete_sequence=['#1f77b4']
             )
             fig.update_layout(showlegend=False)
@@ -314,12 +277,12 @@ with tab1:
 with tab2:
     st.subheader("👥 Análisis de Actividad por Autor")
 
-    if 'username' in df.columns:
+    if 'usuario' in df.columns:
         # Top autores
         top_n = st.slider("Mostrar Top N autores:", min_value=5, max_value=30, value=10)
 
-        top_autores = df['username'].value_counts().head(top_n).reset_index()
-        top_autores.columns = ['username', 'cantidad']
+        top_autores = df['usuario'].value_counts().head(top_n).reset_index()
+        top_autores.columns = ['usuario', 'cantidad']
 
         col_left, col_right = st.columns([2, 1])
 
@@ -327,10 +290,10 @@ with tab2:
             fig = px.bar(
                 top_autores,
                 x='cantidad',
-                y='username',
+                y='usuario',
                 orientation='h',
                 title=f"Top {top_n} Autores más Activos",
-                labels={'cantidad': 'Cantidad de Posts', 'username': 'Autor'},
+                labels={'cantidad': 'Cantidad de Posts', 'usuario': 'Autor'},
                 color='cantidad',
                 color_continuous_scale='Viridis'
             )
@@ -339,12 +302,12 @@ with tab2:
 
         with col_right:
             st.markdown("### 📊 Estadísticas de Autores")
-            st.metric("Total Autores", df['username'].nunique())
-            st.metric("Posts por Autor (promedio)", f"{len(df) / df['username'].nunique():.1f}")
+            st.metric("Total Autores", df['usuario'].nunique())
+            st.metric("Posts por Autor (promedio)", f"{len(df) / df['usuario'].nunique():.1f}")
 
-            if 'longitud_body' in df.columns:
+            if 'longitud_cuerpo' in df.columns:
                 # Autor con más texto
-                autor_mas_texto = df.groupby('username')['longitud_body'].sum().idxmax()
+                autor_mas_texto = df.groupby('usuario')['longitud_cuerpo'].sum().idxmax()
                 st.metric("Autor con más texto", autor_mas_texto)
 
 # ============================================================================
@@ -413,95 +376,10 @@ with tab3:
             st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================================
-# PESTAÑA 4: Foros y Categorías
+# PESTAÑA 4: Datos Crudos
 # ============================================================================
 
 with tab4:
-    st.subheader("🏷️ Análisis de Foros y Categorías")
-
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        if 'forum_name' in df.columns:
-            foros_count = df['forum_name'].value_counts().reset_index()
-            foros_count.columns = ['forum_name', 'cantidad']
-
-            fig = px.pie(
-                foros_count.head(8),
-                values='cantidad',
-                names='forum_name',
-                title="Distribución por Foro (Top 8)",
-                hole=0.4
-            )
-            fig.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig, use_container_width=True)
-
-    with col_right:
-        if 'category' in df.columns:
-            categorias_count = df['category'].value_counts().reset_index()
-            categorias_count.columns = ['category', 'cantidad']
-
-            fig = px.bar(
-                categorias_count.head(10),
-                x='cantidad',
-                y='category',
-                orientation='h',
-                title="Distribución por Categoría (Top 10)",
-                labels={'cantidad': 'Cantidad', 'category': 'Categoría'},
-                color='cantidad',
-                color_continuous_scale='Teal'
-            )
-            fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-            st.plotly_chart(fig, use_container_width=True)
-
-    # Entidades detectadas
-    st.markdown("### 🔍 Entidades Detectadas")
-
-    if 'entidades' in df.columns:
-        df_entidades = procesar_entidades(df)
-
-        if not df_entidades.empty:
-            col_left, col_right = st.columns(2)
-
-            with col_left:
-                # Top categorías de entidades
-                top_categorias = df_entidades['categoria'].value_counts().head(10).reset_index()
-                top_categorias.columns = ['categoria', 'cantidad']
-
-                fig = px.bar(
-                    top_categorias,
-                    x='cantidad',
-                    y='categoria',
-                    orientation='h',
-                    title="Top 10 Categorías de Entidades",
-                    color='cantidad',
-                    color_continuous_scale='Plasma'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-            with col_right:
-                # Top valores de entidades
-                top_valores = df_entidades['valor'].value_counts().head(15).reset_index()
-                top_valores.columns = ['valor', 'cantidad']
-
-                fig = px.bar(
-                    top_valores,
-                    x='cantidad',
-                    y='valor',
-                    orientation='h',
-                    title="Top 15 Entidades Detectadas",
-                    color='cantidad',
-                    color_continuous_scale='Magenta'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No se encontraron entidades en los datos cargados.")
-
-# ============================================================================
-# PESTAÑA 5: Datos Crudos
-# ============================================================================
-
-with tab5:
     st.subheader("📋 Vista de Datos Crudos")
 
     # Selector de columnas a mostrar
@@ -509,8 +387,8 @@ with tab5:
     columnas_seleccionadas = st.multiselect(
         "Seleccionar columnas a mostrar:",
         columnas_disponibles,
-        default=[col for col in ['message_id', 'username', 'timestamp', 'forum_name',
-                                   'title_limpio', 'body_limpio', 'longitud_body']
+        default=[col for col in ['id_mensaje', 'usuario', 'fecha_hora',
+                                   'titulo_limpio', 'cuerpo_limpio', 'longitud_cuerpo']
                  if col in columnas_disponibles]
     )
 
